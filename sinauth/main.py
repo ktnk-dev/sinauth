@@ -3,9 +3,10 @@ from __future__ import annotations
 import json
 from pathlib import Path as FilePath
 from typing import Annotated
+from urllib.parse import unquote
 
 from fastapi import Depends, FastAPI, HTTPException, Path, Request, status
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi.staticfiles import StaticFiles
 import uvicorn
@@ -52,6 +53,78 @@ TAG_USERS = "Users"
 TAG_SYSTEM = "System"
 
 app.mount("/authorize/web/assets", StaticFiles(directory=WEB_DIR), name="web-assets")
+
+DANGEROUS_PATH_SEGMENTS = {
+    ".aws",
+    ".git",
+    ".hg",
+    ".ssh",
+    ".svn",
+}
+DANGEROUS_FILE_NAMES = {
+    ".dockerignore",
+    ".ds_store",
+    ".npmrc",
+    ".yarnrc",
+    "authorized_keys",
+    "backup.sql",
+    "composer.json",
+    "composer.lock",
+    "config.json",
+    "config.php",
+    "credentials",
+    "database.yml",
+    "docker-compose.override.yml",
+    "docker-compose.yml",
+    "dump.sql",
+    "id_dsa",
+    "id_ecdsa",
+    "id_ed25519",
+    "id_rsa",
+    "package-lock.json",
+    "phpinfo.php",
+    "private.key",
+    "secret.key",
+    "secrets.json",
+    "secrets.yml",
+    "settings.py",
+    "wp-config.php",
+}
+DANGEROUS_FILE_SUFFIXES = {
+    ".bak",
+    ".backup",
+    ".dump",
+    ".old",
+    ".orig",
+    ".sql",
+    ".swp",
+}
+
+
+def is_secret_probe_path(path: str) -> bool:
+    normalized = unquote(path).lower().replace("\\", "/")
+    segments = [segment for segment in normalized.split("/") if segment]
+    for segment in segments:
+        if segment in DANGEROUS_PATH_SEGMENTS:
+            return True
+        if segment.startswith(".env"):
+            return True
+        if segment in DANGEROUS_FILE_NAMES:
+            return True
+        if any(segment.endswith(suffix) for suffix in DANGEROUS_FILE_SUFFIXES):
+            return True
+    return False
+
+
+@app.middleware("http")
+async def block_banned_or_secret_probe_ips(request: Request, call_next):
+    client_ip = request.client.host if request.client else ""
+    if client_ip and store.is_ip_banned(client_ip):
+        return JSONResponse(status_code=status.HTTP_403_FORBIDDEN, content={"detail": "forbidden"})
+    if client_ip and is_secret_probe_path(request.url.path):
+        store.ban_ip(client_ip)
+        return JSONResponse(status_code=status.HTTP_403_FORBIDDEN, content={"detail": "forbidden"})
+    return await call_next(request)
 
 
 def record_to_out(user: UserRecord, *, token_service: str = DEFAULT_SCOPE) -> UserOut:

@@ -24,6 +24,10 @@ and returned in user API responses.
 If `collections.default` contains `display_name` and `profile_picture_url`,
 they are also returned as top-level user fields next to `id` and `username`.
 
+Requests for known secret/config paths such as `.env`, `.git`, SSH keys, SQL
+dumps and common config backups permanently ban the caller IP. Banned IPs are
+stored in the pickle file and receive `403` on every route.
+
 ## Docker Compose
 
 ```bash

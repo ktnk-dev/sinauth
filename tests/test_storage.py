@@ -34,6 +34,17 @@ def test_user_exists_checks_username_and_id(tmp_path) -> None:
     assert not store.user_exists("missing")
 
 
+def test_banned_ips_are_persisted(tmp_path) -> None:
+    path = tmp_path / "store.pkl"
+    store = PickleStore(path)
+
+    store.ban_ip("203.0.113.10")
+
+    reloaded = PickleStore(path)
+    assert reloaded.is_ip_banned("203.0.113.10")
+    assert not reloaded.is_ip_banned("203.0.113.11")
+
+
 def test_load_migrates_user_without_id(tmp_path) -> None:
     path = tmp_path / "store.pkl"
     old_user = UserRecord(username="old", password_hash="x")
