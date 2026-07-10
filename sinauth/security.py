@@ -45,17 +45,37 @@ def verify_password(password: str, encoded: str) -> bool:
 def create_token(
     *,
     username: str,
-    service: str,
     secret: str,
     ttl_seconds: int,
+    services: list[str] | None = None,
+    service: str | None = None,
 ) -> tuple[str, int]:
-    payload = {"sub": username, "service": service}
+    if services is None:
+        if service is None:
+            raise ValueError("service or services is required")
+        services = [service]
+    if not services or not all(isinstance(item, str) and item for item in services):
+        raise ValueError("services must be a non-empty list of strings")
+
+    payload: dict[str, Any] = {"sub": username, "services": services}
+    # Preserve the claim expected by consumers of legacy single-service tokens.
+    if len(services) == 1:
+        payload["service"] = services[0]
     return create_signed_payload(payload=payload, secret=secret, ttl_seconds=ttl_seconds)
 
 
 def decode_token(token: str, secret: str) -> dict[str, Any]:
     payload = decode_signed_payload(token, secret)
-    if not payload.get("sub") or not payload.get("service"):
+    services = payload.get("services")
+    if services is None and payload.get("service"):
+        services = [payload["service"]]
+        payload["services"] = services
+    if (
+        not payload.get("sub")
+        or not isinstance(services, list)
+        or not services
+        or not all(isinstance(item, str) and item for item in services)
+    ):
         raise ValueError("invalid token claims")
     return payload
 

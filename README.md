@@ -88,7 +88,8 @@ Unscoped values like `users.read` also work and mean the default scope.
 
 ## Service collections
 
-A login request includes `service`. The token is bound to that service.
+A login request includes `service`. It may be a service name or a list of
+service names. The token is bound to the requested services.
 
 ```bash
 curl -s http://localhost:8000/authorize/api/login \
@@ -102,6 +103,19 @@ If a token was issued for service `billing`, API responses expose only:
 - the `billing` collection
 
 This keeps a service from seeing another service's collection.
+
+To grant one token access to several service collections, pass them as an array:
+
+```bash
+curl -s http://localhost:8000/authorize/api/login \
+  -H 'content-type: application/json' \
+  -d '{"username":"admin","password":"admin","service":["billing","crm"]}'
+```
+
+Such a token can access the `default`, `billing`, and `crm` collections. The
+signed token contains the `services` claim. A string value remains supported
+for backwards compatibility. Requesting `default` retains its existing
+unrestricted access to all collections.
 
 Update the current user's current-service collection:
 
@@ -154,7 +168,7 @@ A service can create a temporary browser authorization link. This endpoint is pu
 curl -X POST http://localhost:8000/authorize/web/sessions \
   -H 'content-type: application/json' \
   -d '{
-    "service": "billing",
+    "service": ["billing", "crm"],
     "on_success_redirect": "https://billing.example/auth/success",
     "on_error_redirect": "https://billing.example/auth/error"
   }'
@@ -171,7 +185,7 @@ The response contains:
 
 Open `authorize_url` in the browser. It serves the files from `sinauth/web/`.
 The page uses the regular `/authorize/api/login` and `/authorize/api/register`
-endpoints, passing the service from the temporary web link.
+endpoints, passing the service or service list from the temporary web link.
 
 On successful login or registration, the user is redirected to `on_success_redirect` with:
 
@@ -180,6 +194,7 @@ On successful login or registration, the user is redirected to `on_success_redir
 - `expires_at`
 - `username`
 - `service`
+- `services` (JSON-encoded requested service list)
 
 On failed login/registration, the user is redirected to `on_error_redirect` with:
 
@@ -210,7 +225,7 @@ Login:
 ```bash
 curl -s http://localhost:8000/authorize/api/login \
   -H 'content-type: application/json' \
-  -d '{"username":"alice","password":"secret","service":"billing"}'
+  -d '{"username":"alice","password":"secret","service":["billing","crm"]}'
 ```
 
 Register:
@@ -223,7 +238,7 @@ curl -X POST http://localhost:8000/authorize/api/register \
     "password": "secret",
     "display_name": "Alice",
     "profile_picture_url": "https://example.com/alice.png",
-    "service": "billing"
+    "service": ["billing", "crm"]
   }'
 ```
 

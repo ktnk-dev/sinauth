@@ -27,6 +27,7 @@ from sinauth.models import (
     WebAuthorizeSessionCreate,
     WebAuthorizeSessionOut,
     validate_service,
+    validate_services,
 )
 from sinauth.permissions import (
     has_permission,
@@ -127,7 +128,7 @@ async def block_banned_or_secret_probe_ips(request: Request, call_next):
     return await call_next(request)
 
 
-def record_to_out(user: UserRecord, *, token_service: str = DEFAULT_SCOPE) -> UserOut:
+def record_to_out(user: UserRecord, *, token_service: str | list[str] = DEFAULT_SCOPE) -> UserOut:
     default_collection = user.collections.get(DEFAULT_SCOPE, {})
     display_name = default_collection.get("display_name")
     profile_picture_url = default_collection.get("profile_picture_url")
@@ -163,12 +164,15 @@ def auth_context(
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, str(exc)) from exc
 
     username = str(payload["sub"])
-    service = validate_service(str(payload["service"]))
+    try:
+        services = validate_services(payload["services"])
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid token claims") from exc
     user = db.get_user(username)
     if user is None or user.disabled:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "user is disabled or does not exist")
 
-    return AuthContext(username=username, service=service, user=record_to_out(user))
+    return AuthContext(username=username, services=services, user=record_to_out(user))
 
 
 def current_record(ctx: AuthContext, db: PickleStore) -> UserRecord:
@@ -194,14 +198,14 @@ def require_permission(
 
 def ensure_collection_visible(ctx: AuthContext, service: str) -> None:
     try:
-        require_service_visible(ctx.service, service)
+        require_service_visible(ctx.services, service)
     except PermissionError as exc:
         raise HTTPException(status.HTTP_403_FORBIDDEN, str(exc)) from exc
 
 
 def ensure_collections_visible(ctx: AuthContext, collections: dict[str, dict]) -> None:
     try:
-        require_collections_visible(ctx.service, set(collections))
+        require_collections_visible(ctx.services, set(collections))
     except PermissionError as exc:
         raise HTTPException(status.HTTP_403_FORBIDDEN, str(exc)) from exc
 
@@ -213,13 +217,19 @@ def web_flow_payload(web_token: str, config: Settings) -> dict:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
     if payload.get("typ") != "web_authorize":
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "invalid web authorization token")
+    try:
+        payload["services"] = validate_services(
+            payload.get("services", payload.get("service", []))
+        )
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "invalid web authorization token") from exc
     return payload
 
 
-def issue_access_token(user: UserRecord, service: str, config: Settings) -> TokenResponse:
+def issue_access_token(user: UserRecord, services: list[str], config: Settings) -> TokenResponse:
     token, expires_at = create_token(
         username=user.username,
-        service=service,
+        services=services,
         secret=config.auth_secret,
         ttl_seconds=config.token_ttl_seconds,
     )
@@ -306,7 +316,7 @@ def create_web_authorize_session(
     web_token, expires_at = create_signed_payload(
         payload={
             "typ": "web_authorize",
-            "service": payload.service,
+            "services": payload.service,
             "on_success_redirect": payload.on_success_redirect,
             "on_error_redirect": payload.on_error_redirect,
         },
@@ -329,7 +339,7 @@ def get_web_authorize_page(
     page = index_path.read_text(encoding="utf-8")
     page_config = {
         "serviceName": config.service_name,
-        "service": flow["service"],
+        "service": flow["services"],
         "onSuccessRedirect": flow["on_success_redirect"],
         "onErrorRedirect": flow.get("on_error_redirect"),
         "registrationEnabled": config.registration_enabled,
@@ -347,7 +357,7 @@ def me(
     db: Annotated[PickleStore, Depends(get_store)],
 ) -> UserOut:
     user = current_record(ctx, db)
-    return record_to_out(user, token_service=ctx.service)
+    return record_to_out(user, token_service=ctx.services)
 
 
 @app.get("/me/collections", tags=[TAG_SERVICE_COLLECTIONS])
@@ -356,7 +366,7 @@ def my_collections(
     db: Annotated[PickleStore, Depends(get_store)],
 ) -> dict[str, dict]:
     user = current_record(ctx, db)
-    return visible_collections(user.collections, token_service=ctx.service)
+    return visible_collections(user.collections, token_service=ctx.services)
 
 
 @app.put("/me/collections/{service_name}", response_model=UserOut, tags=[TAG_SERVICE_COLLECTIONS])
@@ -371,7 +381,7 @@ def put_my_collection(
     if service == DEFAULT_SCOPE:
         require_permission(ctx, db, "collections.write", DEFAULT_SCOPE)
     user = db.put_collection(ctx.username, service, payload.data)
-    return record_to_out(user, token_service=ctx.service)
+    return record_to_out(user, token_service=ctx.services)
 
 
 @app.post(
@@ -397,7 +407,7 @@ def create_user(
         )
     except ValueError as exc:
         raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
-    return record_to_out(user, token_service=ctx.service)
+    return record_to_out(user, token_service=ctx.services)
 
 
 @app.get("/users", response_model=list[UserOut], tags=[TAG_USERS])
@@ -406,7 +416,7 @@ def list_users(
     db: Annotated[PickleStore, Depends(get_store)],
 ) -> list[UserOut]:
     require_permission(ctx, db, "users.read")
-    return [record_to_out(user, token_service=ctx.service) for user in db.list_users()]
+    return [record_to_out(user, token_service=ctx.services) for user in db.list_users()]
 
 
 @app.get("/users/{username}", response_model=UserOut, tags=[TAG_USERS])
@@ -419,7 +429,7 @@ def get_user(
     user = db.get_user(username)
     if user is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "user not found")
-    return record_to_out(user, token_service=ctx.service)
+    return record_to_out(user, token_service=ctx.services)
 
 
 @app.patch("/users/{username}", response_model=UserOut, tags=[TAG_USERS])
@@ -439,7 +449,7 @@ def update_user(
         user = db.update_user(username, **patch)
     except KeyError as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "user not found") from exc
-    return record_to_out(user, token_service=ctx.service)
+    return record_to_out(user, token_service=ctx.services)
 
 
 @app.delete("/users/{username}", status_code=status.HTTP_204_NO_CONTENT, tags=[TAG_USERS])
@@ -465,7 +475,7 @@ def get_user_collections(
     user = db.get_user(username)
     if user is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "user not found")
-    return visible_collections(user.collections, token_service=ctx.service)
+    return visible_collections(user.collections, token_service=ctx.services)
 
 
 @app.get("/users/{username}/collections/{service_name}", tags=[TAG_SERVICE_COLLECTIONS])
@@ -498,13 +508,13 @@ def put_user_collection(
 ) -> UserOut:
     service = validate_service(service_name)
     ensure_collection_visible(ctx, service)
-    if username != ctx.username or service != ctx.service:
+    if username != ctx.username or service not in ctx.services:
         require_permission(ctx, db, "collections.write", service)
     try:
         user = db.put_collection(username, service, payload.data)
     except KeyError as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "user not found") from exc
-    return record_to_out(user, token_service=ctx.service)
+    return record_to_out(user, token_service=ctx.services)
 
 
 def create_app() -> FastAPI:

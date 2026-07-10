@@ -3,7 +3,7 @@
  *
  * @typedef {Object} SinauthWebAuthConfig
  * @property {string} serviceName Human-readable name of this authorization server.
- * @property {string} service Service identifier requested by the integrating app.
+ * @property {string|string[]} service Service identifier(s) requested by the integrating app.
  * @property {string} onSuccessRedirect Absolute URL where the browser is redirected after login or registration.
  * @property {string|null} onErrorRedirect Absolute URL where the browser is redirected after an error.
  * @property {boolean} registrationEnabled Whether the registration UI should be available.
@@ -55,6 +55,10 @@ const capitalize = (str) => {
   return str.charAt(0).toUpperCase() + str.slice(1)
 };
 
+const requestedServices = Array.isArray(config.service) ? config.service : [config.service]
+const serviceLabel = requestedServices.join(', ')
+const serviceNoun = requestedServices.length === 1 ? 'сервис' : 'сервисы'
+
 const api = async (path, options = {}) => {
   const response = await fetch(path, {
     ...options,
@@ -93,7 +97,7 @@ const app = {
         ),
         $.p(
           {class: 'service_info'},
-          `Вы авторизируетесь в сервис`, $.br(), $.span(config.service)
+          `Вы авторизируетесь в ${serviceNoun}:`, $.br(), ...requestedServices.map(e => $.span(e))
         ),
         $.p(
           {class: 'service_info'},
@@ -273,7 +277,8 @@ const app = {
       token_type: auth.body.token_type,
       expires_at: auth.body.expires_at,
       username: data.login,
-      service: config.service
+      service: config.service,
+      services: JSON.stringify(Array.isArray(config.service) ? config.service : [config.service])
     })
   },
   register: async (login, password) => {
@@ -331,7 +336,7 @@ void (function () {
    *
    * @typedef {Object} SinauthWebAuthConfig
    * @property {string} serviceName Human-readable name of this authorization server.
-   * @property {string} service Service identifier requested by the integrating app.
+   * @property {string|string[]} service Service identifier(s) requested by the integrating app.
    * @property {string} onSuccessRedirect Absolute URL where the browser is redirected after login or registration.
    * @property {string|null} onErrorRedirect Absolute URL where the browser is redirected after an error.
    * @property {boolean} registrationEnabled Whether the registration UI should be available.
@@ -409,6 +414,7 @@ void (function () {
           expires_at: body.expires_at,
           username,
           service: config.service,
+          services: JSON.stringify(Array.isArray(config.service) ? config.service : [config.service]),
         });
         return;
       }

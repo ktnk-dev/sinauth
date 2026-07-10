@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from typing import Any
 
 from sinauth.models import DEFAULT_SCOPE, UserRecord
@@ -18,19 +19,30 @@ def has_permission(user: UserRecord, action: str, scope: str = DEFAULT_SCOPE) ->
     )
 
 
-def require_service_visible(token_service: str, target_service: str) -> None:
-    if token_service != DEFAULT_SCOPE and target_service not in {DEFAULT_SCOPE, token_service}:
-        raise PermissionError("token service can access only default and its own collection")
+def _allowed_services(token_service: str | Iterable[str]) -> set[str] | None:
+    services = {token_service} if isinstance(token_service, str) else set(token_service)
+    # A default-scoped token has the historical unrestricted behaviour.
+    if DEFAULT_SCOPE in services:
+        return None
+    return {DEFAULT_SCOPE, *services}
 
 
-def require_collections_visible(token_service: str, collection_names: set[str]) -> None:
-    if token_service == DEFAULT_SCOPE:
+def require_service_visible(token_service: str | Iterable[str], target_service: str) -> None:
+    allowed = _allowed_services(token_service)
+    if allowed is not None and target_service not in allowed:
+        raise PermissionError("token can access only default and its requested service collections")
+
+
+def require_collections_visible(
+    token_service: str | Iterable[str], collection_names: set[str]
+) -> None:
+    allowed = _allowed_services(token_service)
+    if allowed is None:
         return
-    allowed = {DEFAULT_SCOPE, token_service}
     forbidden = sorted(collection_names - allowed)
     if forbidden:
         raise PermissionError(
-            "token service can access only default and its own collection: "
+            "token can access only default and its requested service collections: "
             + ", ".join(forbidden)
         )
 
@@ -38,9 +50,9 @@ def require_collections_visible(token_service: str, collection_names: set[str]) 
 def visible_collections(
     collections: dict[str, dict[str, Any]],
     *,
-    token_service: str,
+    token_service: str | Iterable[str],
 ) -> dict[str, dict[str, Any]]:
-    if token_service == DEFAULT_SCOPE:
+    allowed = _allowed_services(token_service)
+    if allowed is None:
         return dict(collections)
-    allowed = {DEFAULT_SCOPE, token_service}
     return {key: value for key, value in collections.items() if key in allowed}

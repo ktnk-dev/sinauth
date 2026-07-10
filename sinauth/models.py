@@ -44,20 +44,35 @@ def validate_service(value: str) -> str:
     return value
 
 
+def validate_services(value: str | list[str]) -> list[str]:
+    """Normalize a requested service or list of services.
+
+    A single string remains accepted for compatibility with existing clients.
+    """
+    services = [value] if isinstance(value, str) else value
+    if not isinstance(services, list) or not services:
+        raise ValueError("service must be a non-empty string or list of strings")
+
+    normalized = [validate_service(service) for service in services]
+    if len(set(normalized)) != len(normalized):
+        raise ValueError("service list must not contain duplicates")
+    return normalized
+
+
 class LoginRequest(BaseModel):
     username: str
     password: str
-    service: str = DEFAULT_SCOPE
+    service: list[str] = Field(default_factory=lambda: [DEFAULT_SCOPE])
 
     @field_validator("username")
     @classmethod
     def _username(cls, value: str) -> str:
         return validate_name(value, "username")
 
-    @field_validator("service")
+    @field_validator("service", mode="before")
     @classmethod
-    def _service(cls, value: str) -> str:
-        return validate_service(value)
+    def _service(cls, value: str | list[str]) -> list[str]:
+        return validate_services(value)
 
 
 class TokenResponse(BaseModel):
@@ -75,7 +90,7 @@ class ApiRegisterRequest(BaseModel):
     password: str = Field(min_length=1)
     display_name: str
     profile_picture_url: str | None = None
-    service: str = DEFAULT_SCOPE
+    service: list[str] = Field(default_factory=lambda: [DEFAULT_SCOPE])
 
     @field_validator("login")
     @classmethod
@@ -92,10 +107,10 @@ class ApiRegisterRequest(BaseModel):
     def _profile_picture_url(cls, value: str | None) -> str | None:
         return validate_redirect_url(value) if value else None
 
-    @field_validator("service")
+    @field_validator("service", mode="before")
     @classmethod
-    def _service(cls, value: str) -> str:
-        return validate_service(value)
+    def _service(cls, value: str | list[str]) -> list[str]:
+        return validate_services(value)
 
 
 class UserCreate(BaseModel):
@@ -155,7 +170,7 @@ class CollectionPut(BaseModel):
 
 class AuthContext(BaseModel):
     username: str
-    service: str
+    services: list[str]
     user: UserOut
 
 
@@ -172,15 +187,15 @@ def validate_redirect_url(value: str) -> str:
 
 
 class WebAuthorizeSessionCreate(BaseModel):
-    service: str = DEFAULT_SCOPE
+    service: list[str] = Field(default_factory=lambda: [DEFAULT_SCOPE])
     on_success_redirect: str
     on_error_redirect: str | None = None
     expires_in_seconds: int | None = Field(default=None, ge=60, le=3600)
 
-    @field_validator("service")
+    @field_validator("service", mode="before")
     @classmethod
-    def _service(cls, value: str) -> str:
-        return validate_service(value)
+    def _service(cls, value: str | list[str]) -> list[str]:
+        return validate_services(value)
 
     @field_validator("on_success_redirect", "on_error_redirect")
     @classmethod

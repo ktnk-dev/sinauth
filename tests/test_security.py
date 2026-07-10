@@ -27,7 +27,34 @@ def test_token_roundtrip() -> None:
 
     assert payload["sub"] == "alice"
     assert payload["service"] == "billing"
+    assert payload["services"] == ["billing"]
     assert payload["exp"] == expires_at
+
+
+def test_multi_service_token_roundtrip() -> None:
+    token, _ = create_token(
+        username="alice",
+        services=["billing", "crm"],
+        secret="test-secret",
+        ttl_seconds=60,
+    )
+
+    payload = decode_token(token, "test-secret")
+
+    assert payload["services"] == ["billing", "crm"]
+    assert "service" not in payload
+
+
+def test_legacy_single_service_token_is_still_accepted() -> None:
+    token, _ = create_signed_payload(
+        payload={"sub": "alice", "service": "billing"},
+        secret="test-secret",
+        ttl_seconds=60,
+    )
+
+    payload = decode_token(token, "test-secret")
+
+    assert payload["services"] == ["billing"]
 
 
 def test_signed_payload_roundtrip() -> None:

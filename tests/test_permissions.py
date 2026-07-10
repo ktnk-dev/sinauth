@@ -39,6 +39,7 @@ def test_service_visibility_filter() -> None:
         "default": {"display_name": "Alice"},
         "billing": {"plan": "pro"},
     }
+    assert visible_collections(collections, token_service=["billing", "crm"]) == collections
 
 
 def test_service_visibility_guard() -> None:
@@ -48,6 +49,8 @@ def test_service_visibility_guard() -> None:
     with pytest.raises(PermissionError):
         require_service_visible("billing", "crm")
 
+    require_service_visible(["billing", "crm"], "crm")
+
 
 def test_bulk_collection_visibility_guard() -> None:
     require_collections_visible("billing", {"default", "billing"})
@@ -55,3 +58,5 @@ def test_bulk_collection_visibility_guard() -> None:
 
     with pytest.raises(PermissionError):
         require_collections_visible("billing", {"default", "crm"})
+
+    require_collections_visible(["billing", "crm"], {"default", "billing", "crm"})
