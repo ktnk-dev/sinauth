@@ -18,7 +18,7 @@ const components = {
   SavedAccount: data => $.div(
     {class: 'account', id: `user${data.id}`, onclick: () => app.login(data.id)},
     $.div(
-      {class: 'image', style: {backgroundImage: data.profile_picture_url ? `url(${data.profile_picture_url})` : '#444', backgroundColor: data.profile_picture_url ? `url(${data.profile_picture_url})` : '#444'}},
+      {class: 'image', style: {backgroundImage: data.profile_picture_url ? `url(${data.profile_picture_url})` : '#666', backgroundColor: data.profile_picture_url ? `url(${data.profile_picture_url})` : '#666'}},
       !data.profile_picture_url ? components.PersonIcon : null
     ),
     $.div(

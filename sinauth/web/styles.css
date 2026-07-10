@@ -241,6 +241,7 @@ main {
     display: flex;
     flex-direction: column;
     border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.07);
     
     .account {
       border-radius: 0;
@@ -269,8 +270,9 @@ main {
       }
       .delete {
         border-radius: 30px;
+        margin: 7px;
         margin-left: auto;
-        height: 100%;
+        height: calc(100% - 14px);
         aspect-ratio: 1/1;
         display: flex;
         align-items: center;
@@ -307,4 +309,30 @@ main {
 h1,h2,h3,h4,h5,h6,p {
   margin: 0;
   font-weight: normal;
+}
+
+
+@media (max-width: 900px) {
+  body {
+    justify-content: start;
+    align-items: start;
+  }
+  main {
+    flex-direction: column;
+    width: 100vw;
+    border: 0;
+    background: 0;
+    backdrop-filter: none;
+    height: 100dvh !important;
+
+    section {
+      width: 100% !important;
+    }
+    .saved_accounts {
+      backdrop-filter: blur(10px);
+    }
+    .login_form {
+      backdrop-filter: blur(10px);
+    }
+  }
 }
