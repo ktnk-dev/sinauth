@@ -12,6 +12,7 @@ services:
       WEB_AUTH_TOKEN_TTL_SECONDS: "${WEB_AUTH_TOKEN_TTL_SECONDS:-300}"
       REGISTRATION_ENABLED: "${REGISTRATION_ENABLED:-true}"
       DATA_PATH: /data/sinauth.pkl
+      FORWARDED_ALLOW_IPS: "${FORWARDED_ALLOW_IPS:-127.0.0.1}"
     volumes:
       - sinauth-data:/data
     restart: unless-stopped

@@ -15,6 +15,7 @@ class Settings:
     admin_password: str
     host: str
     port: int
+    forwarded_allow_ips: str
 
 
 def env_bool(name: str, default: bool) -> bool:
@@ -36,4 +37,5 @@ def load_settings() -> Settings:
         admin_password=os.getenv("ADMIN_PASSWORD", "admin"),
         host=os.getenv("HOST", "0.0.0.0"),
         port=int(os.getenv("PORT", "8000")),
+        forwarded_allow_ips=os.getenv("FORWARDED_ALLOW_IPS", "127.0.0.1"),
     )

@@ -512,4 +512,11 @@ def create_app() -> FastAPI:
 
 
 def run() -> None:
-    uvicorn.run("sinauth.main:app", host=settings.host, port=settings.port, reload=False)
+    uvicorn.run(
+        "sinauth.main:app",
+        host=settings.host,
+        port=settings.port,
+        reload=False,
+        proxy_headers=True,
+        forwarded_allow_ips=settings.forwarded_allow_ips,
+    )

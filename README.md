@@ -6,7 +6,7 @@ Small FastAPI authorization service with a pickle-backed store.
 
 ```bash
 uv sync
-uv run uvicorn sinauth.main:app --reload
+uv run sinauth
 ```
 
 The service creates a default admin on first start:
@@ -27,6 +27,36 @@ they are also returned as top-level user fields next to `id` and `username`.
 Requests for known secret/config paths such as `.env`, `.git`, SSH keys, SQL
 dumps and common config backups permanently ban the caller IP. Banned IPs are
 stored in the pickle file and receive `403` on every route.
+
+## Reverse proxy
+
+When running behind nginx, Caddy, Traefik or another reverse proxy, enable
+trusted forwarded headers so IP bans apply to the real client IP instead of
+`127.0.0.1` or the proxy container IP.
+
+The packaged `sinauth` command runs uvicorn with proxy headers enabled and
+trusts `FORWARDED_ALLOW_IPS`, default `127.0.0.1`:
+
+```bash
+FORWARDED_ALLOW_IPS=127.0.0.1 uv run sinauth
+```
+
+For Docker networks, set it to the reverse proxy IP or trusted private subnet.
+Use `*` only if sinauth is reachable exclusively through a trusted proxy network:
+
+```bash
+FORWARDED_ALLOW_IPS='*' docker compose up --build
+```
+
+If you run uvicorn directly, pass the same settings yourself:
+
+```bash
+uv run uvicorn sinauth.main:app \
+  --host 0.0.0.0 \
+  --port 8000 \
+  --proxy-headers \
+  --forwarded-allow-ips '127.0.0.1'
+```
 
 ## Docker Compose
 

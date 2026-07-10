@@ -11,8 +11,9 @@ ENV PATH="/app/.venv/bin:$PATH"
 ENV HOST=0.0.0.0
 ENV PORT=8000
 ENV DATA_PATH=/data/sinauth.pkl
+ENV FORWARDED_ALLOW_IPS=127.0.0.1
 
 VOLUME ["/data"]
 EXPOSE 8000
 
-CMD ["uv", "run", "--no-dev", "uvicorn", "sinauth.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uv", "run", "--no-dev", "sinauth"]
