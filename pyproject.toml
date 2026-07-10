@@ -1,0 +1,35 @@
+[project]
+name = "sinauth"
+version = "0.1.0"
+description = "Small FastAPI authorization service with file-backed storage."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.8.0",
+]
+
+[project.scripts]
+sinauth = "sinauth.main:run"
+
+[tool.uv]
+package = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.setuptools.packages.find]
+include = ["sinauth*"]
+
+[tool.setuptools.package-data]
+sinauth = ["web/*"]

@@ -1,0 +1,20 @@
+services:
+  sinauth:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      AUTH_SECRET: "${AUTH_SECRET:-change-me-in-compose}"
+      SERVICE_NAME: "${SERVICE_NAME:-sinauth}"
+      ADMIN_USERNAME: "${ADMIN_USERNAME:-admin}"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:-admin}"
+      TOKEN_TTL_SECONDS: "${TOKEN_TTL_SECONDS:-86400}"
+      WEB_AUTH_TOKEN_TTL_SECONDS: "${WEB_AUTH_TOKEN_TTL_SECONDS:-300}"
+      REGISTRATION_ENABLED: "${REGISTRATION_ENABLED:-true}"
+      DATA_PATH: /data/sinauth.pkl
+    volumes:
+      - sinauth-data:/data
+    restart: unless-stopped
+
+volumes:
+  sinauth-data:

@@ -1,0 +1,310 @@
+/* Tune these four values to reskin the whole background. */
+:root {
+  --color1: 160;
+  --color2: 205;
+  --color3: 135;
+  --base-saturation: 0%;
+}
+
+* {
+  box-sizing: border-box;
+  user-select: none;
+}
+
+html {
+  min-height: 100%;
+}
+
+body {
+  touch-action: pan-x pan-y;
+  height: 100dvh;
+  width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      circle at 18% 22%,
+      hsl(var(--color1) var(--base-saturation) 50% / 0.28),
+      transparent 26rem
+    ),
+    radial-gradient(
+      circle at 82% 18%,
+      hsl(var(--color2) var(--base-saturation) 50% / 0.24),
+      transparent 24rem
+    ),
+    radial-gradient(
+      circle at 50% 88%,
+      hsl(var(--color3) var(--base-saturation) 50% / 0.2),
+      transparent 22rem
+    ),
+    linear-gradient(
+      135deg,
+      hsl(var(--color1) 48% 1%) 0%,
+      hsl(var(--color1) 48% 1%) 42%,
+      hsl(var(--color2) 46% 1%) 100%
+    );
+  color: hsl(var(--color1) 100% 100%);
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body::before,
+body::after {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+}
+
+body::before {
+  opacity: 0.34;
+  background-image:
+    linear-gradient(
+      90deg,
+      hsl(var(--color1) var(--base-saturation) 62% / 0.18) 0 1px,
+      transparent 1px 80px
+    ),
+    repeating-linear-gradient(
+      180deg,
+      hsl(var(--color1) var(--base-saturation) 63% / 0.22) 0 1px,
+      transparent 1px 80px
+    )
+    ;
+  background-size:
+    80px 100%
+  ;
+}
+
+/* body::after {
+  background:
+    linear-gradient(hsl(0 0% 100% / 0.025) 50%, hsl(0 0% 0% / 0.1) 50%),
+    radial-gradient(circle at center, transparent 0%, transparent 56%, hsl(0 0% 0% / 0.58) 100%);
+  background-size:
+    100% 4px,
+    100% 100%;
+  mix-blend-mode: screen;
+} */
+
+main {
+  position: fixed;
+  z-index: 1;
+  height: 50%;
+  width: 75%;
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 33px;
+  display: flex;
+
+  section {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  section:nth-child(1) {
+    width: 70%;
+    border-right: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+
+  .auth_info {
+    margin: 20px;
+    gap:    20px;
+    display: flex;
+    
+    svg {
+      background: rgba(255, 255, 255, 0.07);
+      border-radius: 13px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      /* width:  15px;
+      height: 15px; */
+      padding: 5px;
+      height: 46px;
+      width: 46px;
+    }
+
+  }
+  .service_info {
+    margin: 0 20px 20px;
+    >span {
+      width: fit-content;
+      /* margin-left: 4px; */
+      border-bottom: 2px solid #fff;
+      padding: 0px 1px;
+    }
+  }
+  .service_info:nth-child(3) {
+    opacity: .8;
+    font-size: 14px;
+  }
+  .service_info:nth-child(4) {
+    opacity: .6;
+    font-size: 14px;
+  }
+
+}
+
+.bottom {
+  width: 100%;
+  display: flex;
+  gap: 10px;
+  margin-top: auto;
+  align-items: end;
+  justify-content: end;
+
+  button {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.07);
+    color: #fff;
+    padding: 8px 12px;
+    font-size: 16px;
+    border-radius: 100px;
+    cursor: pointer;
+    display: flex;
+    gap: 9px;
+    align-items: center;
+  }
+  button:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+  button.primary {
+    border-color: #fff;
+    background: #fff;
+    color: #000;
+
+    svg {
+      fill: #000 !important;
+      height: 16px !important;
+      width: 16px !important;
+    }
+  }
+  button.primary:hover{
+    border-color: #ddd;
+    background: #ddd;
+  }
+}
+
+
+#loading {
+  height: var(--size);
+  width:  var(--size);
+  animation: rotate 0.7s linear infinite;
+  border: calc(var(--size) / 7) solid #fff;
+  border-top-color: transparent !important;
+  border-radius: 1000px;
+}
+
+.login_form {
+  border-radius: 30px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+
+  input {
+    border-radius: 30px 30px 0 0;
+
+    border: none;
+    background: rgba(255, 255, 255, 0.07);
+    color: #fff;
+    padding: 15px 15px;
+    font-family: monospace;
+    font-size: 16px;
+    outline: none;
+  }
+  input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+  }
+  input:nth-child(2) {
+    border-radius: 0 0 30px 30px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  input:focus {
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+}
+
+#login {
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px;
+  gap: 20px;
+  >h1 {
+    margin-top: 0px;
+    margin-bottom: 6px;
+  }
+  .saved_accounts {
+    border-radius: 30px;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    
+    .account {
+      border-radius: 0;
+      display: flex;
+      cursor: pointer;
+      align-items: center;
+      .image {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 10px;
+        height: 40px;
+        width:  40px;
+        /* border: 1px solid #999; */
+        background-position: center;
+        background-size: cover;
+        border-radius: 100px;
+        svg {
+          height: 22px;
+          width:  22px;
+        }
+      }
+      .username {
+        font-size: 20px;
+        padding-left: 5px;
+      }
+      .delete {
+        border-radius: 30px;
+        margin-left: auto;
+        height: 100%;
+        aspect-ratio: 1/1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .delete:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+    }
+    .account:first-child {
+      border-top-left-radius: 30px;
+      border-top-right-radius: 30px;
+    }
+    .account:last-child {
+      border-bottom-left-radius: 30px;
+      border-bottom-right-radius: 30px;
+    }
+    .account:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .account:nth-child(n+2) {
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+    }
+  }
+
+}
+
+@keyframes rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+h1,h2,h3,h4,h5,h6,p {
+  margin: 0;
+  font-weight: normal;
+}

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Authorization</title>
+    <link rel="stylesheet" href="/authorize/web/assets/styles.css" />
+  </head>
+  <body>
+    <main>
+      <section id="data"></section>
+      <section id="login"></section>
+    </main>
+    <script>
+      // window.SINAUTH_WEB_AUTH = {
+      //   serviceName: 'Авторизация',
+      //   service: 'target service',
+      //   onSuccessRedirect: 'https://example.com',
+      //   onErrorRedirect: 'https://example.com/error',
+      //   registrationEnabled: true
+      // }
+      window.SINAUTH_WEB_AUTH = {{SINAUTH_WEB_AUTH_CONFIG}};
+    </script>
+    <script src="/authorize/web/assets/snw.lib.js"></script>
+    <script src="/authorize/web/assets/app.js"></script>
+  </body>
+</html>
